@@ -10,6 +10,7 @@
   --accent-soft: #ded0b0;
   --accent-dark: #191714;
   --font-display: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --font-kanji: "Yu Gothic", "YuGothic", "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, "Noto Sans CJK JP", sans-serif;
   --font-body: "Segoe UI", "Trebuchet MS", sans-serif;
 }
 
@@ -213,7 +214,7 @@ button {
 }
 
 .kanji-large {
-  font-family: var(--font-display);
+  font-family: var(--font-kanji);
   font-size: clamp(6.5rem, 25vw, 10rem);
   line-height: 0.92;
 }
@@ -249,7 +250,7 @@ button {
 }
 
 .kanji-small {
-  font-family: var(--font-display);
+  font-family: var(--font-kanji);
   font-size: clamp(3.5rem, 13vw, 5.5rem);
   line-height: 0.95;
 }

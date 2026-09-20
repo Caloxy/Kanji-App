@@ -145,7 +145,10 @@ function buildSkipOutcome(previousState, random) {
 }
 
 function buildLearningUnknownDelay(queueLength, random) {
-  return randomInteger(1, Math.max(1, Math.min(3, queueLength + 1)), random);
+  const maxDelay = Math.min(20, queueLength);
+  const minDelay = Math.min(6, maxDelay);
+
+  return randomInteger(minDelay, maxDelay, random);
 }
 
 function buildLearningSkipDelay(queueLength, random) {
