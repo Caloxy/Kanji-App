@@ -115,11 +115,17 @@ function buildKnownOutcome(previousState, cardsLength, random) {
   };
 }
 
-function buildUnknownOutcome(previousState, random) {
+function buildUnknownDelay(queueLength, random) {
+  const maxDelay = Math.min(24, queueLength);
+  const minDelay = Math.min(8, maxDelay);
+
+  return randomInteger(minDelay, maxDelay, random);
+}
+
+function buildUnknownOutcome(previousState, queueLength, random) {
   const nextEase = clampEase(previousState.ease - 0.2);
   const nextInterval = 1;
-  const maxDelay = Math.min(3, 1 + previousState.unknown);
-  const delay = randomInteger(1, maxDelay, random);
+  const delay = buildUnknownDelay(queueLength, random);
 
   return {
     interval: nextInterval,
@@ -142,13 +148,6 @@ function buildSkipOutcome(previousState, random) {
     ease: previousState.ease,
     delay,
   };
-}
-
-function buildLearningUnknownDelay(queueLength, random) {
-  const maxDelay = Math.min(20, queueLength);
-  const minDelay = Math.min(6, maxDelay);
-
-  return randomInteger(minDelay, maxDelay, random);
 }
 
 function buildLearningSkipDelay(queueLength, random) {
@@ -302,7 +301,11 @@ export function applyReviewResult(session, cards, result, random = Math.random) 
   if (result === REVIEW_RESULTS.KNOWN) {
     scheduling = buildKnownOutcome(reviewedState, cards.length, random);
   } else if (result === REVIEW_RESULTS.UNKNOWN) {
-    scheduling = buildUnknownOutcome(reviewedState, random);
+    scheduling = buildUnknownOutcome(
+      reviewedState,
+      Math.max(0, session.queue.length - 1),
+      random
+    );
   } else {
     scheduling = buildSkipOutcome(reviewedState, random);
   }
@@ -369,7 +372,7 @@ export function applyLearningResult(session, cards, result, random = Math.random
     nextQueue = scheduleCard(
       remainingQueue,
       currentId,
-      buildLearningUnknownDelay(remainingQueue.length, random),
+      buildUnknownDelay(remainingQueue.length, random),
       [nextImmediateId]
     );
   } else if (result === REVIEW_RESULTS.SKIP) {
