@@ -176,6 +176,17 @@ export function markCardLearned(progress, cardId) {
   });
 }
 
+export function markCardsLearned(progress, cardIds) {
+  const normalizedProgress = sanitizeLearningProgress(progress);
+  const learnedCardIds = new Set(normalizedProgress.learnedCardIds);
+
+  normalizeCardIds(cardIds).forEach((cardId) => learnedCardIds.add(cardId));
+
+  return sanitizeLearningProgress({
+    learnedCardIds: [...learnedCardIds],
+  });
+}
+
 export function unmarkCardsLearned(progress, cardIds) {
   const normalizedProgress = sanitizeLearningProgress(progress);
   const blockedCardIds = new Set(normalizeCardIds(cardIds));

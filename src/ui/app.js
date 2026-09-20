@@ -26,6 +26,7 @@ import {
   loadSession,
   loadStudyMode,
   markCardLearned,
+  markCardsLearned,
   purgeStoredSessionsForCardIds,
   saveDeckSelection,
   saveLearningProgress,
@@ -83,6 +84,16 @@ function confirmReset(mode, selectionLabel) {
   return window.confirm(message);
 }
 
+function confirmLearnDeck(deck, remainingCount) {
+  if (typeof window === "undefined" || typeof window.confirm !== "function") {
+    return true;
+  }
+
+  return window.confirm(
+    `Marquer les ${remainingCount} kanjis restants du deck ${deck.label} comme appris ?\n\nIls seront immédiatement disponibles en révision.`
+  );
+}
+
 function getRuntime(state) {
   const selectedCards = getCardsForDeckSelection(state.selectedDeckIds);
   const learnedCardIds = getLearnedCardIdSet(state.learningProgress);
@@ -110,6 +121,8 @@ function getRuntime(state) {
 }
 
 function renderDeckSheet(state, selectionLabel) {
+  const learnedCardIds = getLearnedCardIdSet(state.learningProgress);
+
   return `
     <div class="deck-sheet-layer ${state.deckPickerOpen ? "is-open" : ""}" aria-hidden="${!state.deckPickerOpen}">
       <button
@@ -132,30 +145,45 @@ function renderDeckSheet(state, selectionLabel) {
           ${deckCatalog
             .map((deck) => {
               const isSelected = state.selectedDeckIds.includes(deck.id);
-              const status = deck.available ? deck.note : "Indisponible";
+              const learnedCount = deck.cards.filter((card) =>
+                learnedCardIds.has(card.id)
+              ).length;
+              const allLearned = deck.available && learnedCount === deck.cards.length;
+              const status = deck.available
+                ? `${deck.note} · ${learnedCount} appris`
+                : "Indisponible";
 
               return `
-                <button
-                  type="button"
-                  class="deck-option ${isSelected ? "is-selected" : ""} ${deck.available ? "" : "is-disabled"}"
-                  data-action="toggle-deck"
-                  data-deck-id="${deck.id}"
-                  ${deck.available ? "" : "disabled"}
-                >
-                  <span class="deck-option-main">
-                    <span class="deck-option-label">${escapeHtml(deck.label)}</span>
-                    <span class="deck-option-meta">${escapeHtml(status)}</span>
-                  </span>
-                  <span class="deck-option-tag">
-                    ${
-                      deck.available
-                        ? isSelected
-                          ? "Actif"
-                          : "Ajouter"
-                        : "Bientôt"
-                    }
-                  </span>
-                </button>
+                <div class="deck-option-row">
+                  <button
+                    type="button"
+                    class="deck-option ${isSelected ? "is-selected" : ""} ${deck.available ? "" : "is-disabled"}"
+                    data-action="toggle-deck"
+                    data-deck-id="${deck.id}"
+                    ${deck.available ? "" : "disabled"}
+                  >
+                    <span class="deck-option-main">
+                      <span class="deck-option-label">${escapeHtml(deck.label)}</span>
+                      <span class="deck-option-meta">${escapeHtml(status)}</span>
+                    </span>
+                    <span class="deck-option-tag">
+                      ${
+                        deck.available
+                          ? isSelected
+                            ? "Actif"
+                            : "Ajouter"
+                          : "Bientôt"
+                      }
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    class="deck-learn-all"
+                    data-action="learn-deck"
+                    data-deck-id="${deck.id}"
+                    ${deck.available && !allLearned ? "" : "disabled"}
+                  >${allLearned ? "Tout appris" : "Marquer appris"}</button>
+                </div>
               `;
             })
             .join("")}
@@ -506,6 +534,42 @@ export function mountApp(root) {
     });
   }
 
+  function handleLearnDeck(deckId) {
+    const deck = deckCatalog.find((candidate) => candidate.id === deckId);
+
+    if (!deck?.available) {
+      return;
+    }
+
+    const learnedCardIds = getLearnedCardIdSet(state.learningProgress);
+    const remainingCardIds = deck.cards
+      .map((card) => card.id)
+      .filter((cardId) => !learnedCardIds.has(cardId));
+
+    if (
+      remainingCardIds.length === 0 ||
+      !confirmLearnDeck(deck, remainingCardIds.length)
+    ) {
+      return;
+    }
+
+    const nextLearningProgress = markCardsLearned(
+      state.learningProgress,
+      remainingCardIds
+    );
+    const nextActiveCards = getActiveCards(
+      state.mode,
+      state.selectedDeckIds,
+      nextLearningProgress
+    );
+
+    setState({
+      ...state,
+      learningProgress: nextLearningProgress,
+      session: sanitizeSession(state.session, nextActiveCards),
+    });
+  }
+
   function handleSetMode(nextMode) {
     const normalizedMode =
       nextMode === STUDY_MODES.REVIEW ? STUDY_MODES.REVIEW : STUDY_MODES.LEARN;
@@ -570,6 +634,11 @@ export function mountApp(root) {
 
     if (action === "toggle-deck") {
       handleToggleDeck(dataset.deckId);
+      return;
+    }
+
+    if (action === "learn-deck") {
+      handleLearnDeck(dataset.deckId);
       return;
     }
 

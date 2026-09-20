@@ -376,6 +376,7 @@ button {
 .text-button,
 .sheet-close,
 .deck-option,
+.deck-learn-all,
 .deck-sheet-backdrop {
   border: 1.5px solid var(--line);
   cursor: pointer;
@@ -524,6 +525,12 @@ button {
   gap: 0.7rem;
 }
 
+.deck-option-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55rem;
+}
+
 .deck-option {
   width: 100%;
   border-radius: 20px;
@@ -580,6 +587,21 @@ button {
 .deck-option:disabled {
   opacity: 0.52;
   cursor: not-allowed;
+}
+
+.deck-learn-all {
+  width: 7.4rem;
+  border-radius: 20px;
+  padding: 0.65rem;
+  background: var(--accent-soft);
+  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.deck-learn-all:disabled {
+  cursor: default;
+  opacity: 0.55;
 }
 
 .deck-sheet-note {
